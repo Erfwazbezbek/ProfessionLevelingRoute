@@ -1,0 +1,22 @@
+## Interface: 16001, 120100
+## Title: Profession Leveling Route
+## Notes: Cross-Character Profession tracking and Leveling route planner for WoW: Forever, and WoW: Retail
+## Author: Erfwazbezbek
+## Version 0.0.1
+## IconTexture: Interface\Icons\Inv_10_specialization_inscription_archiving_color2
+
+## Category: Professions
+## Category-deDE: Berufe
+## Category-esES: Profesiones
+## Category-esMX: Profesiones
+## Category-frFR: Métiers
+## Category-itIT: Professioni
+## Category-koKR: 전문 기술
+## Category-ptBR: Profissões
+## Category-ruRU: Профессии
+## Category-zhCN: 专业
+## Category-zhTW: 專業技能
+
+## LoadOnDemand: 0
+
+Core.lua
