@@ -2,7 +2,10 @@
 ## Title: Profession Leveling Route
 ## Notes: Cross-Character Profession tracking and Leveling route planner for WoW: Forever, and WoW: Retail
 ## Author: Erfwazbezbek
-## Version 0.0.1
+## SavedVariables: ProfessionLevelingRouteDB
+## SavedVariablesPerCharacter: ProfessionLevelingRouteLocalDB
+## Version: 0.0.1
+## X-Date: 2026-09-27
 ## IconTexture: Interface\Icons\Inv_10_specialization_inscription_archiving_color2
 
 ## Category: Professions
@@ -17,6 +20,10 @@
 ## Category-zhCN: 专业
 ## Category-zhTW: 專業技能
 
-## LoadOnDemand: 0
+#-- libraries
+embeds.xml
 
-Core.lua
+#-- Code
+ProfessionLevelingRoute.lua
+Settings\Menu.lua
+Settings\Button.lua
