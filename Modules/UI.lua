@@ -6,7 +6,7 @@ local function CreateMainFrame()
 
     local frame = CreateFrame(
         "Frame",
-        "PLR_MainFrame",
+        "nil",
         UIParent,
         "BackdropTemplate"
     )
@@ -49,24 +49,22 @@ local function leftBIGsmallright( frame )
     frame:RegisterForDrag( "LeftButton" )
     frame:SetScript( "OnDragStart", function(self)
         self:StartMoving()
-    end)
+        end 
+    )
     frame:SetScript( "OnDragStop", function(self)
         self:StopMovingOrSizing()
-    end)
+        end 
+    )
 
     -- Customize the size to your liking
-    local resizeButton = CreateFrame(
+    local resizeButton = CreateFrame( 
         "Button",
         nil,
         frame
     )
 
     resizeButton:SetSize( 16, 16 )
-    resizeButton:SetPoint(
-        "BOTTOMRIGHT",
-        -2,
-        2
-    )
+    resizeButton:SetPoint( "BOTTOMRIGHT", -2, 2 )
     resizeButton:SetNormalTexture( "Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up" )
     resizeButton:SetHighlightTexture( "Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight" )
     resizeButton:SetPushedTexture( "Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down" )
@@ -94,31 +92,25 @@ local function CreateHeader( frame )
 
     header:SetSize( 300, 42 )
     header:SetPoint( "TOP", frame, "TOP", 0, 15 )
-    header.background = header:CreateTexture(
-        nil,
-        "BACKGROUND"
-    )
+    header.background = header:CreateTexture( nil, "BACKGROUND" )
     header.background:SetAllPoints()
     header.background:SetColorTexture( 0.03, 0.03, 0.03, 1 )
-    header:SetBackdrop({
-        edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-        edgeSize = 32,
-        insets = 
-            {
-                left = 8,
-                right = 8,
-                top = 8,
-                bottom = 8,
-            },
+    header:SetBackdrop(
+        {
+            edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+            edgeSize = 32,
+            insets = 
+                {
+                    left = 8,
+                    right = 8,
+                    top = 8,
+                    bottom = 8,
+                },
         }
     )
-    header.title = header:CreateFontString(
-        nil,
-        "OVERLAY",
-        "GameFontNormalLarge"
-    )
+    header.title = header:CreateFontString( nil, "OVERLAY", "GameFontNormalLarge" )
     header.title:SetPoint( "CENTER" )
-    header.title:SetText( "Profession Leveling Suite" )
+    header.title:SetText( "Profession Leveling Route" )
 
     return header
 end
@@ -142,22 +134,54 @@ local function CreateCloseButton(frame)
     return closeButton
 end
 
+local function CreateContentPanel(parent)
+
+    local panel = CreateFrame(
+        "Frame",
+        nil,
+        parent,
+        "BackdropTemplate"
+    )
+
+    panel:SetBackdrop(
+        {
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+            tile = true,
+            tileSize = 16,
+            edgeSize = 16,
+            insets = 
+                {
+                    left = 4,
+                    right = 4,
+                    top = 4,
+                    bottom = 4,
+                },
+        }
+    )
+
+    panel:SetBackdropColor( 0.02, 0.02, 0.02, 0.88 )
+    panel:SetBackdropBorderColor( 0.35, 0.35, 0.35, 1 )
+    return panel
+end
+
 -- Little pages within the frame
-local function CreatePageFrames(frame)
+local function CreatePageFrames( frame )
 
     local pages = {}
 
-    pages.roster = CreateFrame( "Frame", nil, frame )
-    pages.roster:SetPoint( "TOPLEFT", 15, -90 )
-    pages.roster:SetPoint( "BOTTOMRIGHT", -15, 45 )
+    local function CreatePage()
 
-    pages.planner = CreateFrame( "Frame", nil, frame )
-    pages.planner:SetPoint( "TOPLEFT", 15, -90 )
-    pages.planner:SetPoint( "BOTTOMRIGHT", -15, 45 )
+        local page = CreateContentPanel( frame )
+        page:SetPoint( "TOPLEFT", frame, "TOPLEFT", 20, -105 )
+        page:SetPoint( "BOTTOMRIGHT", frame, "BOTTOMRIGHT", -20, 45 )
 
-    pages.recipes = CreateFrame( "Frame", nil, frame )
-    pages.recipes:SetPoint( "TOPLEFT", 15, -90 )
-    pages.recipes:SetPoint( "BOTTOMRIGHT", -15, 45 )
+        return page
+    end
+
+    pages.roster = CreatePage()
+    pages.planner = CreatePage()
+    pages.recipes = CreatePage()
 
     return pages
 end
@@ -177,87 +201,104 @@ local function SetupPageController( pages )
     return ShowPage
 end
 
--- Alt + Tab Continued 
+-- Main Tabs (Theres only 3)
 local function CreateTabs( frame, pages, ShowPage )
 
     local tabs = {}
 
-    local function SelectTab( selectedTab )
-        for _, tab in ipairs( tabs ) do
-            if tab == selectedTab then
-                tab:Disable()
-            else
-                tab:Enable()
-            end
+    local function SetTabSelected( tab, selected )
+        if selected then
+            tab:SetBackdropColor( 0.03, 0.03, 0.03, 1 )
+            tab:SetBackdropBorderColor( 0.75, 0.75, 0.75, 1 )
+            tab.text:SetTextColor( 1, 1, 1 )
+        else
+            tab:SetBackdropColor( 0.015, 0.015, 0.015, 1 )
+            tab:SetBackdropBorderColor( 0.35, 0.35, 0.35, 1 )
+            tab.text:SetTextColor( 1, 0.82, 0 )
         end
     end
 
-    local function CreateTab( text, xOffset, page )
+    local function SelectTab( selectedTab )
+        for _, tab in ipairs( tabs ) do
+            SetTabSelected( tab, tab == selectedTab )
+        end
+    end
+
+    local function CreateTab( text, page )
 
         local tab = CreateFrame(
             "Button",
             nil,
             frame,
-            "UIPanelButtonTemplate"
+            "BackdropTemplate"
         )
 
-        tab:SetSize( 110, 30 )
-        tab:SetPoint( "TOPLEFT", xOffset, -55 )
-        tab:SetText( text )
-        tab:SetScript( "OnClick", function(self)
-            SelectTab(self)
-            ShowPage(page)
+        tab:SetSize( 75, 28 )
+        tab:SetBackdrop(
+            {
+                bgFile = "Interface\\Buttons\\WHITE8X8",
+                edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+                tile = true,
+                tileSize = 16,
+                edgeSize = 12,
+                insets = 
+                {
+                    left = 3,
+                    right = 3,
+                    top = 3,
+                    bottom = 3,
+                },
+            }
+        )
+
+        tab.text = tab:CreateFontString( nil, "OVERLAY", "GameFontNormal" )
+        tab.text:SetPoint( "CENTER", 0, 1 )
+        tab.text:SetText( text )
+        tab:SetScript( "OnClick", function( self )
+            SelectTab( self )
+            ShowPage( page )
             end
         )
         table.insert( tabs, tab )
-
         return tab
+
     end
 
     local rosterTab = CreateTab(
         "Roster",
-        20,
         pages.roster
     )
+    rosterTab:SetPoint( "BOTTOMLEFT", pages.roster, "TOPLEFT", 5, -1 )
 
     local plannerTab = CreateTab(
         "Planner",
-        135,
         pages.planner
     )
+    plannerTab:SetPoint( "LEFT", rosterTab, "RIGHT", 5, 0 )
 
     local recipesTab = CreateTab(
         "Recipes",
-        250,
         pages.recipes
     )
 
-    SelectTab( rosterTab )
+    recipesTab:SetPoint( "LEFT", plannerTab, "RIGHT", 5, 0 )
+    SelectTab(rosterTab)
     ShowPage( pages.roster )
 
     return tabs
 end
 
-
 -- Pages
 local function CreatePageContent( pages )
 
     -- Character Selection 
-    pages.roster.title = pages.roster:CreateFontString(
-        nil,
-        "OVERLAY",
-        "GameFontNormal"
-    )
-    pages.roster.title:SetPoint( "TOPLEFT", 10, -10 )
+    pages.roster.title = pages.roster:CreateFontString( nil, "OVERLAY", "GameFontNormalLarge" )
+    pages.roster.title:SetPoint( "CENTER" )
     pages.roster.title:SetText( "Here be alts" )
 
     -- Planner page
-    pages.planner.title = pages.planner:CreateFontString(
-        nil,
-        "OVERLAY",
-        "GameFontNormal"
-    )
-    pages.planner.title:SetPoint( "TOPLEFT", 10, -10 )
+    pages.planner.title = pages.planner:CreateFontString( nil, "OVERLAY", "GameFontNormalLarge" )
+    pages.planner.title:SetPoint( "CENTER" )
     pages.planner.title:SetText( "Here be dragons!" )
 
     -- Recipes, may I recommend a Coq au Vin?? 
@@ -320,12 +361,8 @@ local function CreatePageContent( pages )
         12. Plate and devour 
 
     ]]
-    pages.recipes.title = pages.recipes:CreateFontString(
-        nil,
-        "OVERLAY",
-        "GameFontNormal"
-    )
-    pages.recipes.title:SetPoint( "TOPLEFT", 10, -10 )
+    pages.recipes.title = pages.recipes:CreateFontString( nil, "OVERLAY", "GameFontNormalLarge" )
+    pages.recipes.title:SetPoint( "CENTER" )
     pages.recipes.title:SetText( "Here be recipes! Soon(tm)" )
 
 end
