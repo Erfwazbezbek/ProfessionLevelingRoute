@@ -8,7 +8,7 @@ local MenuConfig = {
     selectedRecipes = "None"
 }
 
-local currentName = UnitName("player") or "Unknown"
+local currentName = UnitFullName("player") or "Unknown"
 local currentRealm = GetRealmName() or "Unknown"
 local currentVersion = C_AddOns.GetAddOnMetadata(ADDON, "Version")
 local lastUpdated = C_AddOns.GetAddOnMetadata(ADDON, "X-Date")
@@ -150,16 +150,18 @@ local profSetting = Settings.RegisterAddOnSetting(
 local function GetProfessionOptions()
     local container = Settings.CreateControlTextContainer()
 
-    local skillLineIDs = { 171, 164, 185, 333, 202, 356, 129, 182, 773, 755, 165, 186, 393, 197 }
-
-    for _, skillLineID in ipairs(skillLineIDs) do
-        if C_TradeSkillUI.GetProfessionInfoBySkillLineID then
-            local profInfo = C_TradeSkillUI.GetProfessionInfoBySkillLineID(skillLineID)
-            if profInfo and profInfo.professionName and profInfo.professionName ~= "" then
-                container:Add(profInfo.professionName, profInfo.professionName)
-            end
-        end
+    for _, profession in ipairs( ns.Professions.list ) do
+    local professionInfo =
+        ns.Professions:GetInfo(
+            profession.skillLineID
+        )
+    if professionInfo then
+        container:Add(
+            profession.skillLineID,
+            professionInfo.professionName
+        )
     end
+end
 
     return container:GetData()
 end
