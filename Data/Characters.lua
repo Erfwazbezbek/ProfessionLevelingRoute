@@ -4,22 +4,24 @@ local ADDON, ns = ...
 local Characters = {}
 ns.Characters = Characters
 
-local function GetCharacterProfessions()
+local function _CharProf()
 
     local professions = {}
     if not GetProfessions or not GetProfessionInfo then
         return professions
     end
 
-    local profession1,
-          profession2,
+    local prof1,
+          prof2,
+          firstaid,
           fishing,
           cooking =
         GetProfessions()
 
     local professionIndexes = {
-        profession1,
-        profession2,
+        prof1,
+        prof2,
+        firstaid,
         fishing,
         cooking,
     }
@@ -34,18 +36,17 @@ local function GetCharacterProfessions()
                   skillLine,
                   skillModifier,
                   specializationIndex,
-                  specializationOffset =
-                GetProfessionInfo(
-                    professionIndex
-                )
+                  specializationOffset,
+                  skillLineName =
+                GetProfessionInfo( professionIndex )
             if skillLine then
                 professions[ skillLine ] = 
                     {
                         skillLineID = skillLine,
                         name = name,
-                        icon = icon,
                         skillLevel = skillLevel,
                         maxSkillLevel = maxSkillLevel,
+                        skillLineName = skillLineName
                     }
             end
         end
@@ -53,16 +54,13 @@ local function GetCharacterProfessions()
     return professions
 end
 
-
-function Characters:GetCurrentCharacter()
-
+function Characters:_Char()
     local name = UnitName( "player" )
     local realm = GetRealmName()
     local faction = UnitFactionGroup( "player" )
-    local className, classFile, classID =
-        UnitClass( "player" )
-    local level =
-        UnitLevel( "player" )
+    local className, classFile, classID = UnitClass( "player" )
+    local level = UnitLevel( "player" )
+    
     local character = {
         name = name,
         realm = realm,
@@ -74,7 +72,41 @@ function Characters:GetCurrentCharacter()
                 id = classID,
             },
         level = level,
-        professions = GetCharacterProfessions(),
+        professions = _CharProf(),
     }
     return character
 end
+
+function Characters:_InitAmIRight()
+    if not PLRDB then PLRDB = {} end
+    if not PLRDB.characters then PLRDB.characters = {} end
+    if not PLRCDB then PLRCDB = {} end
+end
+
+function Characters:_CharKey( character )
+    return character.name .. "-" .. character.realm
+end
+
+function Characters:_Ctrl_S_Char()
+    self:_InitAmIRight()
+    local character = self:_Char()
+    local characterKey = self:_CharKey( character )
+    PLRDB.characters[ characterKey ] = character
+    return character
+end
+
+function Characters:_SmashNGrab()
+    self:_InitAmIRight()
+    return PLRDB.characters
+end
+
+local eventFrame = CreateFrame( "Frame" )
+eventFrame:RegisterEvent( "PLAYER_LOGIN" )
+eventFrame:SetScript( "OnEvent", function( self, event )
+    if event == "PLAYER_LOGIN" then
+        Characters:_Ctrl_S_Char()
+        if ns.Roster and ns.Roster.page then
+            ns.Roster:RefreshCharacters( ns.Roster.page )
+        end
+    end
+end)
