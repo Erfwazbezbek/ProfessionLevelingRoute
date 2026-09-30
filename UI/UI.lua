@@ -37,7 +37,7 @@ local function CreateMainFrame()
             },
         }
     )
-    frame:SetBackdropColor( 0.05, 0.05, 0.05, 0.15 )
+    frame:SetBackdropColor( 0.15, 0.15, 0.15, 0.95 )
 
     return frame
 end
@@ -94,7 +94,7 @@ local function CreateHeader( frame )
     header:SetPoint( "TOP", frame, "TOP", 0, 15 )
     header.background = header:CreateTexture( nil, "BACKGROUND" )
     header.background:SetAllPoints()
-    header.background:SetColorTexture( 0.03, 0.03, 0.03, 1 )
+    header.background:SetColorTexture( 0.15, 0.15, 0.15, 0.95  )
     header:SetBackdrop(
         {
             edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
@@ -260,13 +260,8 @@ end
 -- Pages
 local function CreatePageContent( pages )
 
-    -- Character Selection 
     ns.Roster:Create( pages.roster )
-
-    -- Planner page
     ns.Planner:Create( pages.planner )
-
-    -- Recipe page
     ns.Recipes:Create( pages.recipes )
 
 end
