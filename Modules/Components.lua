@@ -29,8 +29,36 @@ function Components:CreatePanel( parent )
             },
         }
     )
-    panel:SetBackdropColor( 0.02, 0.02, 0.02, 0.88 )
+    panel:SetBackdropColor( 0.20, 0.20, 0.20, 0.25 )
     panel:SetBackdropBorderColor( 0.35, 0.35, 0.35, 1 )
 
     return panel
+end
+
+function Components:CreateProfessionIcon( parent, size )
+
+    local button = CreateFrame(
+        "Button",
+        nil,
+        parent
+    )
+    button:SetSize( size or 24, size or 24 )
+    button.icon = button:CreateTexture( nil, "ARTWORK" )
+    button.icon:SetAllPoints()
+    button.icon:SetTexCoord( 0.07, 0.93, 0.07, 0.93 )
+    button:SetScript( "OnEnter", function( self )
+        if not self.professionName then
+            return
+        end
+            GameTooltip:SetOwner( self, "ANCHOR_RIGHT" )
+            GameTooltip:SetText( self.professionName, 1, 0.82, 0 )
+            GameTooltip:Show()
+        end
+    )
+
+    button:SetScript( "OnLeave", function()
+            GameTooltip:Hide()
+        end
+    )
+    return button
 end
