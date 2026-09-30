@@ -10,35 +10,34 @@ local function CreateMainFrame()
         UIParent,
         "BackdropTemplate"
     )
-
-    frame:SetSize( 750, 500 )
+    frame:SetSize( 850, 500 ) -- 850x500 fits all Primary/Secondary icons at base UI without need for scroll
     frame:SetPoint( "CENTER" )
     frame:SetResizable( true )
     frame:SetResizeBounds(
-        600, -- minimum width
+        850, -- minimum width
         400, -- minimum height
         1200, -- maximum width
         900   -- maximum height
     )
     frame:SetMovable( true )
     frame:EnableMouse( true )
-    frame:SetBackdrop({
-        bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
-        edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-        tile = true,
-        tileSize = 32,
-        edgeSize = 32,
-        insets = 
-            {
-                left = 8,
-                right = 8,
-                top = 8,
-                bottom = 8,
-            },
+    frame:SetBackdrop(
+        {
+            bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background", 
+            edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+            tile = true,
+            tileSize = 32,
+            edgeSize = 32,
+            insets = 
+                {
+                    left = 8,
+                    right = 8,
+                    top = 8,
+                    bottom = 8,
+                },
         }
     )
-    frame:SetBackdropColor( 0.15, 0.15, 0.15, 0.95 )
-
+    frame:SetBackdropColor( 0.15, 0.15, 0.15, 0.95 ) 
     return frame
 end
 
@@ -62,21 +61,13 @@ local function leftBIGsmallright( frame )
         nil,
         frame
     )
-
     resizeButton:SetSize( 16, 16 )
     resizeButton:SetPoint( "BOTTOMRIGHT", -2, 2 )
     resizeButton:SetNormalTexture( "Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up" )
     resizeButton:SetHighlightTexture( "Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight" )
     resizeButton:SetPushedTexture( "Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down" )
-    resizeButton:SetScript( "OnMouseDown", function()
-        frame:StartSizing( "BOTTOMRIGHT" )
-        end 
-    )
-    resizeButton:SetScript( "OnMouseUp", function()
-        frame:StopMovingOrSizing()
-        end 
-    )
-
+    resizeButton:SetScript( "OnMouseDown", function() frame:StartSizing( "BOTTOMRIGHT" ) end  )
+    resizeButton:SetScript( "OnMouseUp", function() frame:StopMovingOrSizing() end )
     frame.resizeButton = resizeButton
 end
 
@@ -89,17 +80,15 @@ local function CreateHeader( frame )
         frame,
         "BackdropTemplate"
     )
-
     header:SetSize( 300, 42 )
     header:SetPoint( "TOP", frame, "TOP", 0, 15 )
-    header.background = header:CreateTexture( nil, "BACKGROUND" )
-    header.background:SetAllPoints()
-    header.background:SetColorTexture( 0.15, 0.15, 0.15, 0.95  )
     header:SetBackdrop(
         {
             edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+            tile = true,
+            tileSize = 32,
             edgeSize = 32,
-            insets = 
+            insets =
                 {
                     left = 8,
                     right = 8,
@@ -108,10 +97,13 @@ local function CreateHeader( frame )
                 },
         }
     )
+    header.background = header:CreateTexture( nil, "BACKGROUND" )
+    header.background:SetPoint( "TOPLEFT", header, "TOPLEFT", 8, -8 )
+    header.background:SetPoint( "BOTTOMRIGHT", header, "BOTTOMRIGHT", -8, 8 )
+    header.background:SetColorTexture( 0.04, 0.04, 0.04, 1 )
     header.title = header:CreateFontString( nil, "OVERLAY", "GameFontNormalLarge" )
     header.title:SetPoint( "CENTER" )
     header.title:SetText( "Profession Leveling Route" )
-
     return header
 end
 
@@ -124,13 +116,11 @@ local function CreateCloseButton(frame)
         frame,
         "UIPanelCloseButton"
     )
-
     closeButton:SetPoint( "TOPRIGHT", -5, -5 )
     closeButton:SetScript( "OnClick", function()
         frame:Hide()
         end
     )
-
     return closeButton
 end
 
@@ -142,16 +132,13 @@ local function CreatePageFrames( frame )
     local function CreatePage()
 
         local page = ns.Components:CreatePanel( frame )
-        page:SetPoint( "TOPLEFT", frame, "TOPLEFT", 20, -105 )
+        page:SetPoint( "TOPLEFT", frame, "TOPLEFT", 20, -55 )
         page:SetPoint( "BOTTOMRIGHT", frame, "BOTTOMRIGHT", -20, 45 )
-
         return page
     end
-
     pages.roster = CreatePage()
     pages.planner = CreatePage()
     pages.recipes = CreatePage()
-
     return pages
 end
 
@@ -159,14 +146,11 @@ end
 local function SetupPageController( pages )
 
     local function ShowPage( page )
-
         pages.roster:Hide()
         pages.planner:Hide()
         pages.recipes:Hide()
-
         page:Show()
     end
-
     return ShowPage
 end
 
@@ -177,11 +161,11 @@ local function CreateTabs( frame, pages, ShowPage )
 
     local function SetTabSelected( tab, selected )
         if selected then
-            tab:SetBackdropColor( 0.03, 0.03, 0.03, 1 )
+            tab:SetBackdropColor( 0.15, 0.15, 0.15, 0.95 )
             tab:SetBackdropBorderColor( 0.75, 0.75, 0.75, 1 )
             tab.text:SetTextColor( 1, 1, 1 )
         else
-            tab:SetBackdropColor( 0.015, 0.015, 0.015, 1 )
+            tab:SetBackdropColor( 0.15, 0.15, 0.15, 0.95 )
             tab:SetBackdropBorderColor( 0.35, 0.35, 0.35, 1 )
             tab.text:SetTextColor( 1, 0.82, 0 )
         end
@@ -201,11 +185,10 @@ local function CreateTabs( frame, pages, ShowPage )
             frame,
             "BackdropTemplate"
         )
-
         tab:SetSize( 75, 28 )
         tab:SetBackdrop(
             {
-                bgFile = "Interface\\Buttons\\WHITE8X8",
+                bgFile = "Interface\\Buttons\\UI-DialogBox-Background",
                 edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
                 tile = true,
                 tileSize = 16,
@@ -219,7 +202,6 @@ local function CreateTabs( frame, pages, ShowPage )
                 },
             }
         )
-
         tab.text = tab:CreateFontString( nil, "OVERLAY", "GameFontNormal" )
         tab.text:SetPoint( "CENTER", 0, 1 )
         tab.text:SetText( text )
@@ -230,7 +212,6 @@ local function CreateTabs( frame, pages, ShowPage )
         )
         table.insert( tabs, tab )
         return tab
-
     end
 
     local rosterTab = CreateTab(
