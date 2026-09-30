@@ -4,27 +4,24 @@ local ADDON, ns = ...
 local Roster = {}
 ns.Roster = Roster
 
-local function CreateFactionSection( page, anchor, faction )
+local function CreateFactionSection( page, faction, side )
 
     local section = CreateFrame(
         "Frame",
         nil,
         page
     )
-    if anchor then
-        section:SetPoint( "TOPLEFT", anchor, "BOTTOMLEFT", 0, -8 )
-    else
+    section:SetHeight( 55 )
+    if side == "LEFT" then
         section:SetPoint( "TOPLEFT", page, "TOPLEFT", 15, -15 )
+        section:SetPoint( "RIGHT", page, "CENTER", -10, 0 )
+    else
+        section:SetPoint( "TOPLEFT", page, "TOP", 10, -15 )
+        section:SetPoint( "TOPRIGHT", page, "TOPRIGHT", -15, -15 )
     end
-    section:SetPoint( "TOPRIGHT", page, "TOPRIGHT", -15, 0 )
-    section:SetHeight( 65 )
     section.faction = section:CreateFontString( nil, "OVERLAY", "GameFontNormalLarge" )
-    section.faction:SetPoint( "TOPLEFT", 0, 0 )
+    section.faction:SetPoint( "TOPLEFT", section, "TOPLEFT", 0, 0 )
     section.faction:SetText( faction )
-    section.missing = section:CreateFontString( nil, "OVERLAY", "GameFontHighlightSmall" )
-    section.missing:SetPoint( "TOPLEFT", section.faction, "BOTTOMLEFT", 10, -3 )
-    section.missing:SetText( "Missing: None" )
-
     return section
 end
 
@@ -51,11 +48,10 @@ local function AddProfessionIcon( section, profession, index )
         section,
         22
     )
-
-    icon:SetPoint( "TOPLEFT", section.missing, "BOTTOMLEFT", ( index - 1 ) * 27, -5 )
+    icon:SetPoint( "TOPLEFT", section, "TOPLEFT", ( index - 1 ) * 27, -25 )
     icon.professionName = profession.name
     local texture =
-    ns.Professions:GetTexture( profession.skillLineID )
+        ns.Professions:GetTexture( profession.skillLineID )
     if texture then
         icon.icon:SetTexture( texture )
     end
@@ -63,7 +59,7 @@ local function AddProfessionIcon( section, profession, index )
     return icon
 end
 
-local function PopulateMissingProfessions( section, faction )
+local function PopulateFactionProfessions( section, faction )
     section.professionIcons = {}
     local knownProfessions = {}
     for _, character in pairs( ns.Characters:_SmashNGrab() ) do
@@ -73,27 +69,24 @@ local function PopulateMissingProfessions( section, faction )
             end
         end
     end
-
-    local missingCount = 0
-    for _, profession in ipairs( ns.Professions.list ) do
-        if not knownProfessions[ profession.skillLineID ] then
-            missingCount = missingCount + 1
-            local icon = AddProfessionIcon(
-                section,
-                profession,
-                missingCount
-            )
-            table.insert( section.professionIcons, icon )
+    for index, profession in ipairs( ns.Professions.list ) do
+        local icon = AddProfessionIcon(
+            section,
+            profession,
+            index
+        )
+        if knownProfessions[ profession.skillLineID ] then
+            icon.icon:SetDesaturated( false )
+            icon:SetAlpha( 1 )
+        else
+            icon.icon:SetDesaturated( true )
+            icon:SetAlpha( 0.30 )
         end
-    end
-    if missingCount == 0 then
-        section.missing:SetText( "Missing: None" )
-    else
-        section.missing:SetText( "Missing:" )
+        table.insert( section.professionIcons, icon )
     end
 end
 
-local function RefreshMissingProfessions( page )
+local function RefreshFactionProfessions( page )
     for _, icon in ipairs( page.hordeSection.professionIcons or {} ) do
         icon:Hide()
         icon:SetParent( nil )
@@ -102,76 +95,187 @@ local function RefreshMissingProfessions( page )
         icon:Hide()
         icon:SetParent( nil )
     end
-    PopulateMissingProfessions( page.hordeSection, "Horde" )
-    PopulateMissingProfessions( page.allianceSection, "Alliance" )
+    PopulateFactionProfessions( page.hordeSection, "Horde" )
+    PopulateFactionProfessions( page.allianceSection, "Alliance" )
 end
 
-local function CreateCharacterList( page, anchor )
+local function CreateCharacterList( page )
 
     local title = page:CreateFontString(
         nil,
         "OVERLAY",
         "GameFontNormalLarge"
     )
-    title:SetPoint( "TOPLEFT", anchor, "BOTTOMLEFT", 0, -12 )
+    title:SetPoint( "TOPLEFT", page, "TOPLEFT", 15, -85 )
     title:SetText( "Characters" )
 
     local panel = ns.Components:CreatePanel( page )
+    panel:SetPoint( "TOPLEFT", title, "BOTTOMLEFT", 0, -8 )
+    panel:SetPoint( "BOTTOMRIGHT", page, "BOTTOMRIGHT", -10, 10 )
 
-    panel:SetPoint( "TOPLEFT", title, "BOTTOMLEFT", 0, -10 )
-    panel:SetPoint( "BOTTOMRIGHT", page, "BOTTOMRIGHT", -15, 15 )
+    local scrollFrame = CreateFrame(
+        "ScrollFrame",
+        nil,
+        panel,
+        "UIPanelScrollFrameTemplate"
+    )
+    scrollFrame:SetPoint( "TOPLEFT", panel, "TOPLEFT", 8, -8 )
+    scrollFrame:SetPoint( "BOTTOMRIGHT", panel, "BOTTOMRIGHT", -28, 8 )
 
+    local scrollChild = CreateFrame(
+        "Frame",
+        nil,
+        scrollFrame
+    )
+    scrollChild:SetSize( 1, 1 )
+    scrollFrame:SetScrollChild( scrollChild )
+
+    local function UpdateScrollChildWidth()
+
+        local width = scrollFrame:GetWidth()
+        if width and width > 1 then
+            scrollChild:SetWidth( width )
+        end
+    end
+    scrollFrame:SetScript( "OnSizeChanged", function() 
+        UpdateScrollChildWidth() 
+    end )
+    scrollFrame:SetScript( "OnShow", function()
+        UpdateScrollChildWidth()
+    end )
+    panel.scrollFrame = scrollFrame
+    panel.scrollChild = scrollChild
     return title, panel
 end
 
+-- Creates a tempalte for each character to have Profession 1/Profession 2 (default until picked)
+-- and then Cooking/First Aid/Fishing since every class can learn it
 local function CreateCharacterRow( parent, character, previousRow )
 
-    local row = CreateFrame(
-        "Frame",
-        nil,
-        parent
-    )
+    local row = ns.Components:CreatePanel( parent )
+    row:SetHeight( 82 )
+    row:SetPoint( "LEFT", parent, "LEFT", 0, 0 )
+    row:SetPoint( "RIGHT", parent, "RIGHT", 0, 0 )
     if previousRow then
-        row:SetPoint( "TOPLEFT", previousRow, "BOTTOMLEFT", 0, -5 )
-        row:SetPoint( "TOPRIGHT", previousRow, "BOTTOMRIGHT", 0, -5 )
+        row:SetPoint( "TOP", previousRow, "BOTTOM", 0, -8 )
     else
-        row:SetPoint( "TOPLEFT", parent, "TOPLEFT", 10, -10 )
-        row:SetPoint( "TOPRIGHT", parent, "TOPRIGHT", -10, -10 )
+        row:SetPoint( "TOP", parent, "TOP", 0, 0 )
     end
-    row:SetHeight( 45 )
     row.name = row:CreateFontString( nil, "OVERLAY", "GameFontNormal" )
-    row.name:SetPoint( "TOPLEFT", 5, -5 )
+    row.name:SetPoint( "TOPLEFT", row, "TOPLEFT", 10, -8 )
     row.name:SetText( character.name )
     row.details = row:CreateFontString( nil, "OVERLAY", "GameFontHighlightSmall" )
-    row.details:SetPoint( "TOPLEFT", row.name, "BOTTOMLEFT", 0, -4 )
-    row.details:SetText(
-    character.class.name ..
-    "  -  Level " .. character.level ..
-    "  -  " .. character.faction ..
-    "  -  " .. character.realm
-    )
+    row.details:SetPoint( "LEFT", row.name, "RIGHT", 8, 0 )
+    row.details:SetText( character.faction .. "  |  Level " .. character.level )
 
-    local previousIcon
-    for _, professionInfo in ipairs( ns.Professions.list ) do
-        local profession = character.professions[ professionInfo.skillLineID ]
+    local primaryProfessions = {}
+
+    for _, skillLineID in ipairs( ns.Professions.primary ) do
+        local profession =
+            character.professions[ skillLineID ]
         if profession then
-            local icon =
-                ns.Components:CreateProfessionIcon(
-                    row,
-                    24
-                )
-            icon.icon:SetTexture( ns.Professions:GetTexture( profession.skillLineID ) )
-            icon.professionName = profession.name
-            icon.skillLevel = profession.skillLevel
-            icon.maxSkillLevel = profession.maxSkillLevel
-            SetProfessionTooltipData( icon, profession.skillLineID )
-            if previousIcon then
-                icon:SetPoint( "RIGHT", previousIcon, "LEFT", -5, 0 )
-            else
-                icon:SetPoint( "RIGHT", row, "RIGHT", -5, 0 )
-            end
-            previousIcon = icon
+            table.insert( primaryProfessions, profession )
         end
+    end
+
+    local function CreateProfessionSlot( skillLineID, profession, previousSlot )
+
+        local professionInfo = ns.Professions:GetBySkillLineID( skillLineID )
+        if not professionInfo then
+            return previousSlot
+        end
+
+        local slot = ns.Components:CreatePanel( row )
+        slot:SetSize( 145, 36 )
+        if previousSlot then
+            slot:SetPoint( "TOPLEFT", previousSlot, "TOPRIGHT", 0, 0 )
+        else
+            slot:SetPoint( "TOPLEFT", row, "TOPLEFT", 10, -35 )
+        end
+
+        local icon =
+            ns.Components:CreateProfessionIcon(
+                slot,
+                24
+            )
+        icon:SetPoint( "LEFT", slot, "LEFT", 6, 0 )
+
+        local texture = ns.Professions:GetTexture( skillLineID )
+        if texture then
+            icon.icon:SetTexture( texture )
+        end
+
+        local text = slot:CreateFontString(
+            nil,
+            "OVERLAY",
+            "GameFontHighlightSmall"
+        )
+        text:SetPoint( "LEFT", icon, "RIGHT", 6, 0 )
+        text:SetPoint( "RIGHT", slot, "RIGHT", -6, 0 )
+        text:SetJustifyH( "LEFT" )
+
+        if profession then
+            text:SetText(
+                professionInfo.name ..
+                "  |cffffd100" ..
+                profession.skillLevel ..
+                " / " ..
+                profession.maxSkillLevel ..
+                "|r"
+            )
+        else
+            text:SetText(
+                professionInfo.name ..
+                "  |cff777777--|r"
+            )
+            icon.icon:SetDesaturated( true )
+            icon:SetAlpha( 0.45 )
+        end
+        return slot
+    end
+    -- Dummy professions until picked because we all cant learn them instantly upon making a character
+    local function CreatePrimaryPlaceholder( textureID, previousSlot )
+
+        local slot = ns.Components:CreatePanel( row )
+        slot:SetSize( 145, 36 )
+        if previousSlot then
+            slot:SetPoint( "TOPLEFT", previousSlot, "TOPRIGHT", 0, 0 )
+        else
+            slot:SetPoint( "TOPLEFT", row, "TOPLEFT", 10, -35 )
+        end
+
+        local icon = ns.Components:CreateProfessionIcon(
+            slot,
+            24
+        )
+        icon:SetPoint( "LEFT", slot, "LEFT", 6, 0 )
+        icon.icon:SetTexture( textureID )
+        icon.icon:SetDesaturated( true )
+        icon:SetAlpha( 0.45 )
+
+        local text = slot:CreateFontString( nil, "OVERLAY", "GameFontHighlightSmall" )
+        text:SetPoint( "LEFT", icon, "RIGHT", 6, 0 )
+        text:SetPoint( "RIGHT", slot, "RIGHT", -6, 0 )
+        text:SetJustifyH( "LEFT" )
+        text:SetText( "Profession  |cff777777--|r" )
+        return slot
+    end
+
+    local previousSlot
+    if primaryProfessions[ 1 ] then
+        previousSlot = CreateProfessionSlot( primaryProfessions[ 1 ].skillLineID, primaryProfessions[ 1 ], previousSlot )
+    else
+        previousSlot = CreatePrimaryPlaceholder( 133738, previousSlot )
+    end
+    if primaryProfessions[ 2 ] then
+        previousSlot = CreateProfessionSlot( primaryProfessions[ 2 ].skillLineID, primaryProfessions[ 2 ], previousSlot )
+    else
+        previousSlot = CreatePrimaryPlaceholder( 133737, previousSlot )
+    end
+    for _, skillLineID in ipairs( ns.Professions.secondary ) do
+
+        local profession = character.professions[ skillLineID ]
+        previousSlot = CreateProfessionSlot( skillLineID, profession, previousSlot )
     end
     return row
 end
@@ -180,18 +284,25 @@ function Roster:Create( page )
     self.page = page
     local hordeSection = CreateFactionSection(
         page,
-        nil,
-        "Horde"
+        "Horde",
+        "LEFT"
     )
 
     local allianceSection = CreateFactionSection(
         page,
+        "Alliance",
+        "RIGHT"
+    )
+    PopulateFactionProfessions(
         hordeSection,
+        "Horde"
+    )
+    PopulateFactionProfessions(
+        allianceSection,
         "Alliance"
     )
     local charactersTitle, characterList = CreateCharacterList(
-        page,
-        allianceSection
+        page
     )
 
     page.hordeSection = hordeSection
@@ -227,12 +338,20 @@ function Roster:RefreshCharacters( page )
     for _, character in ipairs( characters ) do
         local characterRow =
             CreateCharacterRow(
-                page.characterList,
+                page.characterList.scrollChild,
                 character,
                 previousRow
             )
         table.insert( page.characterRows, characterRow )
         previousRow = characterRow
     end
-    RefreshMissingProfessions( page )
+    local rowCount = #page.characterRows
+    local rowHeight = 82
+    local rowSpacing = 8
+
+    local contentHeight =
+        ( rowCount * rowHeight ) +
+        ( math.max( rowCount - 1, 0 ) * rowSpacing )
+    page.characterList.scrollChild:SetHeight( math.max( contentHeight, 1 ) )
+    RefreshFactionProfessions( page )
 end
