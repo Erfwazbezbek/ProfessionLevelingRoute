@@ -4,7 +4,7 @@
 ## Author: Erfwazbezbek
 ## SavedVariables: ProfessionLevelingRouteDB
 ## SavedVariablesPerCharacter: ProfessionLevelingRouteLocalDB
-## Version: 0.0.3
+## Version: 0.0.4
 ## X-Date: 2026-09-29
 ## IconTexture: Interface\Icons\Inv_10_specialization_inscription_archiving_color2
 
@@ -25,6 +25,9 @@ embeds.xml
 
 #-- Code
 ProfessionLevelingRoute.lua
+
+Data\Characters.lua
+Data\Professions.lua
 
 UI\Menu.lua
 UI\Button.lua
