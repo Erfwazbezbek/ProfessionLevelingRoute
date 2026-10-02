@@ -5,8 +5,17 @@ local PLR = ns.Addon
 local MenuConfig = {
     selectedCharacter = "None",
     selectedProfession = "None",
-    selectedRecipes = "None"
+    selectedRecipes = "None",
+    trackNormal = true,
+    trackPvP = true,
+    trackRP = true,
+    trackHC = true,
 }
+ns.Characters:_InitAmIRight()
+MenuConfig.trackNormal = PLRDB.rulesets.Normal
+MenuConfig.trackPvP = PLRDB.rulesets.PvP
+MenuConfig.trackRP = PLRDB.rulesets.RP
+MenuConfig.trackHC = PLRDB.rulesets.HC
 
 local currentName = UnitFullName("player") or "Unknown"
 local currentRealm = GetRealmName() or "Unknown"
@@ -15,9 +24,7 @@ local lastUpdated = C_AddOns.GetAddOnMetadata(ADDON, "X-Date")
 local currentCharacterKey = currentName .. "-" .. currentRealm
 MenuConfig.selectedCharacter = currentCharacterKey
 
--- ==========================================
 -- 1. MAIN LANDING CATEGORY AND CAT TAX
--- ==========================================
 local frame = CreateFrame("Frame")
 
 local background = frame:CreateTexture(nil, "BACKGROUND")
@@ -96,9 +103,7 @@ frame:SetScript("OnHide", function()
     ns.isMenuOpen = false
 end)
 
--- ==========================================
 -- 2. CHARACTERS (Will eventually add more but just testing)
--- ==========================================
 local charSubcategory, charLayout = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "Characters")
 Settings.RegisterAddOnCategory(charSubcategory)
 
@@ -128,12 +133,117 @@ local function GetCharacterOptions()
 end
 
 Settings.CreateDropdown(charSubcategory, charSetting, GetCharacterOptions, "Select Character to View")
+local realmSubcategory, realmLayout = Settings.RegisterVerticalLayoutSubcategory(
+    mainCategory,
+    "Realms"
+)
+Settings.RegisterAddOnCategory( realmSubcategory )
+local normalSetting = Settings.RegisterProxySetting(
+    realmSubcategory,
+    "PLR_TrackNormal",
+    Settings.VarType.Boolean,
+    "Normal",
+    true,
+    function()
+        return PLRDB.rulesets.Normal
+    end,
+    function( value )
+        PLRDB.rulesets.Normal = value
+    end
+)
+Settings.CreateCheckbox(
+    realmSubcategory,
+    normalSetting,
+    "Track characters on Normal realms."
+)
+normalSetting:SetValueChangedCallback( function( setting, value )
+    if ns.Roster and ns.Roster.page then
+        ns.Roster:RefreshCharacters( ns.Roster.page )
+    end
+end )
+local pvpSetting = Settings.RegisterProxySetting(
+    realmSubcategory,
+    "PLR_TrackPvP",
+    Settings.VarType.Boolean,
+    "PvP",
+    true,
+    function()
+        return PLRDB.rulesets.PvP
+    end,
+    function( value )
+        PLRDB.rulesets.PvP = value
+    end
+)
+Settings.CreateCheckbox(
+    realmSubcategory,
+    pvpSetting,
+    "Track characters on PvP realms."
+)
+pvpSetting:SetValueChangedCallback( function( setting, value )
+    if ns.Roster and ns.Roster.page then
+        ns.Roster:RefreshCharacters( ns.Roster.page )
+    end
+end )
+local rpSetting = Settings.RegisterProxySetting(
+    realmSubcategory,
+    "PLR_TrackRP",
+    Settings.VarType.Boolean,
+    "Roleplaying",
+    true,
+    function()
+        return PLRDB.rulesets.RP
+    end,
+    function( value )
+        PLRDB.rulesets.RP = value
+    end
+)
+Settings.CreateCheckbox(
+    realmSubcategory,
+    rpSetting,
+    "Track characters on Roleplaying realms."
+)
+rpSetting:SetValueChangedCallback( function( setting, value )
+    if ns.Roster and ns.Roster.page then
+        ns.Roster:RefreshCharacters( ns.Roster.page )
+    end
+end )
+local hcSetting = Settings.RegisterProxySetting(
+    realmSubcategory,
+    "PLR_TrackHC",
+    Settings.VarType.Boolean,
+    "Hardcore",
+    true,
+    function()
+        return PLRDB.rulesets.HC
+    end,
+    function( value )
+        PLRDB.rulesets.HC = value
+    end
+)
+Settings.CreateCheckbox(
+    realmSubcategory,
+    hcSetting,
+    "Track characters on Hardcore realms."
+)
+hcSetting:SetValueChangedCallback( function( setting, value )
+    if ns.Roster and ns.Roster.page then
+        ns.Roster:RefreshCharacters( ns.Roster.page )
+    end
+end )
+normalSetting:SetValueChangedCallback( function( setting, value )
+    PLRDB.rulesets.Normal = value
+end )
+pvpSetting:SetValueChangedCallback( function( setting, value )
+    PLRDB.rulesets.PvP = value
+end )
+rpSetting:SetValueChangedCallback( function( setting, value )
+    PLRDB.rulesets.RP = value
+end )
+hcSetting:SetValueChangedCallback( function( setting, value )
+    PLRDB.rulesets.HC = value
+end )
 
-
--- ==========================================
 -- 3. PROFESSIONS SUBCATEGORY (Again will add more but just testing)
--- ==========================================
-
 local profSubcategory, profLayout = Settings.RegisterVerticalLayoutSubcategory(mainCategory, "Professions")
 Settings.RegisterAddOnCategory(profSubcategory)
 
