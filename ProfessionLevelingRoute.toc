@@ -4,8 +4,8 @@
 ## Author: Erfwazbezbek
 ## SavedVariables: PLRDB
 ## SavedVariablesPerCharacter: PLRCDB
-## Version: 0.0.6
-## X-Date: 2026-09-30
+## Version: 0.0.8
+## X-Date: 2026-10-01
 ## IconTexture: Interface\Icons\Inv_10_specialization_inscription_archiving_color2
 
 ## Category: Professions
@@ -27,6 +27,7 @@ embeds.xml
 ProfessionLevelingRoute.lua
 
 Data\Characters.lua
+Data\Realms.lua
 Data\Professions.lua
 
 UI\Menu.lua
