@@ -4,6 +4,21 @@ local ADDON, ns = ...
 local Roster = {}
 ns.Roster = Roster
 
+Roster.filterFaction = nil
+Roster.filterSkillLineID = nil
+Roster.filterProfessionName = nil
+Roster.filterRuleset = nil
+
+local function IsRulesetEnabled( character )
+    if not character.realm or not character.realm.ruleset then
+        return false
+    end
+    if not PLRDB or not PLRDB.rulesets then
+        return true
+    end
+    return PLRDB.rulesets[ character.realm.ruleset ] ~= false
+end
+
 local function CreateFactionSection( page, faction, side )
 
     local section = CreateFrame(
@@ -12,6 +27,7 @@ local function CreateFactionSection( page, faction, side )
         page
     )
     section:SetHeight( 55 )
+    section.factionName = faction
     if side == "LEFT" then
         section:SetPoint( "TOPLEFT", page, "TOPLEFT", 15, -15 )
         section:SetPoint( "RIGHT", page, "CENTER", -10, 0 )
@@ -42,12 +58,75 @@ local function SetProfessionTooltipData( icon, skillLineID )
     end
 end
 
+local function CreateRulesetFilters( page )
+
+    local container = CreateFrame( "Frame", nil, page )
+    container:SetSize( 120, 26 )
+    container:SetPoint( "BOTTOMRIGHT", page, "TOPRIGHT", 0, 6 )
+    container.buttons = {}
+    local rulesetOrder = {
+        "Normal",
+        "PvP",
+        "RP",
+        "HC",
+    }
+    for index, ruleset in ipairs( rulesetOrder ) do
+        local rulesetInfo = ns.Realms:GetRulesetInfo( ruleset )
+        local button = CreateFrame( "Button", nil, container )
+        button:SetSize( 24, 24 )
+        button:SetPoint(
+            "LEFT",
+            container,
+            "LEFT",
+            ( index - 1 ) * 29,
+            0
+        )
+        button.ruleset = ruleset
+        button:SetScript( "OnClick", function()
+            if PLRDB.rulesets[ ruleset ] == false then
+                return
+            end
+            if Roster.filterRuleset == ruleset then
+                Roster.filterRuleset = nil
+            else
+                Roster.filterRuleset = ruleset
+            end
+            Roster:RefreshCharacters( Roster.page )
+        end )
+        button.icon = button:CreateTexture( nil, "ARTWORK" )
+        button.icon:SetAllPoints()
+        button.icon:SetTexture( rulesetInfo.icon )
+        button.border = button:CreateTexture( nil, "OVERLAY" )
+        button.border:SetTexture( "Interface\\Buttons\\UI-ActionButton-Border" )
+        button.border:SetBlendMode( "ADD" )
+        button.border:SetPoint( "CENTER", button, "CENTER", 0, 0 )
+        button.border:SetSize( 36, 36 )
+        button.border:Hide()
+        button:SetScript( "OnEnter", function()
+            GameTooltip:SetOwner( button, "ANCHOR_RIGHT" )
+            GameTooltip:SetText( rulesetInfo.name, 1, 0.82, 0 )
+            GameTooltip:Show()
+        end )
+        button:SetScript( "OnLeave", function()
+            GameTooltip:Hide()
+        end )
+        container.buttons[ ruleset ] = button
+    end
+    page.rulesetFilters = container
+end
+
 local function AddProfessionIcon( section, profession, index )
 
     local icon = ns.Components:CreateProfessionIcon(
         section,
         22
     )
+    icon.selectionBorder = icon:CreateTexture( nil, "OVERLAY" )
+    icon.selectionBorder:SetTexture( "Interface\\Buttons\\UI-ActionButton-Border" )
+    icon.selectionBorder:SetBlendMode( "ADD" )
+    icon.selectionBorder:SetPoint( "CENTER", icon, "CENTER", 0, 0 )
+    icon.selectionBorder:SetSize( 38, 38 )
+    icon.selectionBorder:Hide()
     icon:SetPoint( "TOPLEFT", section, "TOPLEFT", ( index - 1 ) * 27, -25 )
     icon.professionName = profession.name
     local texture =
@@ -56,14 +135,32 @@ local function AddProfessionIcon( section, profession, index )
         icon.icon:SetTexture( texture )
     end
     SetProfessionTooltipData( icon, profession.skillLineID )
+    icon:SetScript( "OnClick", function()
+        if icon:GetAlpha() < 1 then
+            return
+        end
+        if Roster.filterFaction == section.factionName and
+        Roster.filterSkillLineID == profession.skillLineID then
+            Roster.filterFaction = nil
+            Roster.filterSkillLineID = nil
+            Roster.filterProfessionName = nil
+        else
+            Roster.filterFaction = section.factionName
+            Roster.filterSkillLineID = profession.skillLineID
+            Roster.filterProfessionName = profession.name
+        end
+        Roster:RefreshCharacters( Roster.page )
+    end )
     return icon
+    
 end
 
 local function PopulateFactionProfessions( section, faction )
     section.professionIcons = {}
     local knownProfessions = {}
     for _, character in pairs( ns.Characters:_SmashNGrab() ) do
-        if character.faction == faction then
+        if IsRulesetEnabled( character ) and
+        character.faction == faction then
             for skillLineID in pairs( character.professions ) do
                 knownProfessions[ skillLineID ] = true
             end
@@ -77,10 +174,18 @@ local function PopulateFactionProfessions( section, faction )
         )
         if knownProfessions[ profession.skillLineID ] then
             icon.icon:SetDesaturated( false )
+            icon.icon:SetVertexColor( 1, 1, 1 )
             icon:SetAlpha( 1 )
         else
             icon.icon:SetDesaturated( true )
+            icon.icon:SetVertexColor( 1, 1, 1 )
             icon:SetAlpha( 0.30 )
+        end
+        if Roster.filterFaction == faction and
+           Roster.filterSkillLineID == profession.skillLineID then
+            icon.selectionBorder:Show()
+        else
+            icon.selectionBorder:Hide()
         end
         table.insert( section.professionIcons, icon )
     end
@@ -293,6 +398,8 @@ function Roster:Create( page )
         "Alliance",
         "RIGHT"
     )
+    CreateRulesetFilters( page )
+
     PopulateFactionProfessions(
         hordeSection,
         "Horde"
@@ -321,13 +428,36 @@ function Roster:RefreshCharacters( page )
         row:Hide()
         row:SetParent( nil )
     end
-    page.characterRows = {}
+    if Roster.filterFaction and Roster.filterProfessionName then
+        page.charactersTitle:SetText(
+            "Characters - " ..
+            Roster.filterFaction ..
+            ": " ..
+            Roster.filterProfessionName
+        )
+    else
+        page.charactersTitle:SetText( "Characters" )
+    end
 
     local previousRow
     local characters = {}
 
     for _, character in pairs( ns.Characters:_SmashNGrab() ) do
-        table.insert( characters, character )
+        local showCharacter = IsRulesetEnabled( character )
+        if showCharacter and Roster.filterRuleset then
+            showCharacter =
+                character.realm.ruleset == Roster.filterRuleset
+        end
+        if showCharacter and
+        Roster.filterFaction and
+        Roster.filterSkillLineID then
+            showCharacter =
+                character.faction == Roster.filterFaction and
+                character.professions[ Roster.filterSkillLineID ] ~= nil
+        end
+        if showCharacter then
+            table.insert( characters, character )
+        end
     end
     table.sort( characters, function( a, b )
         if a.faction ~= b.faction then
