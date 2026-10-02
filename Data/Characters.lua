@@ -56,7 +56,13 @@ end
 
 function Characters:_Char()
     local name = UnitName( "player" )
-    local realm = GetRealmName()
+    local realm = {
+        id = GetRealmID(),
+        nativeID = GetNativeRealmID(),
+        name = GetRealmName(),
+        normalizedName = GetNormalizedRealmName(),
+    }
+    realm.ruleset = ns.Realms:GetRuleset()
     local faction = UnitFactionGroup( "player" )
     local className, classFile, classID = UnitClass( "player" )
     local level = UnitLevel( "player" )
@@ -78,13 +84,28 @@ function Characters:_Char()
 end
 
 function Characters:_InitAmIRight()
-    if not PLRDB then PLRDB = {} end
-    if not PLRDB.characters then PLRDB.characters = {} end
-    if not PLRCDB then PLRCDB = {} end
+    if not PLRDB then
+        PLRDB = {}
+    end
+    if not PLRDB.characters then
+        PLRDB.characters = {}
+    end
+    if not PLRDB.rulesets then
+        PLRDB.rulesets = 
+            {
+                Normal = true,
+                PvP = true,
+                RP = true,
+                HC = true,
+            }
+    end
+    if not PLRCDB then
+        PLRCDB = {}
+    end
 end
 
 function Characters:_CharKey( character )
-    return character.name .. "-" .. character.realm
+    return character.name .. "-" .. character.realm.id
 end
 
 function Characters:_Ctrl_S_Char()
