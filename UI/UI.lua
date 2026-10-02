@@ -160,12 +160,11 @@ local function CreateTabs( frame, pages, ShowPage )
     local tabs = {}
 
     local function SetTabSelected( tab, selected )
+        tab:SetBackdropColor( 0.20, 0.20, 0.20, 0.25 )
         if selected then
-            tab:SetBackdropColor( 0.15, 0.15, 0.15, 0.95 )
             tab:SetBackdropBorderColor( 0.75, 0.75, 0.75, 1 )
             tab.text:SetTextColor( 1, 1, 1 )
         else
-            tab:SetBackdropColor( 0.15, 0.15, 0.15, 0.95 )
             tab:SetBackdropBorderColor( 0.35, 0.35, 0.35, 1 )
             tab.text:SetTextColor( 1, 0.82, 0 )
         end
@@ -188,17 +187,17 @@ local function CreateTabs( frame, pages, ShowPage )
         tab:SetSize( 75, 28 )
         tab:SetBackdrop(
             {
-                bgFile = "Interface\\Buttons\\UI-DialogBox-Background",
+                bgFile = "Interface\\Buttons\\WHITE8X8",
                 edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
                 tile = true,
                 tileSize = 16,
-                edgeSize = 12,
-                insets = 
+                edgeSize = 16,
+                insets =
                 {
-                    left = 3,
-                    right = 3,
-                    top = 3,
-                    bottom = 3,
+                    left = 4,
+                    right = 4,
+                    top = 4,
+                    bottom = 4,
                 },
             }
         )
