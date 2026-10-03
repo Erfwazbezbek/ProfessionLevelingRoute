@@ -115,6 +115,29 @@ local function CreateRulesetFilters( page )
     page.rulesetFilters = container
 end
 
+local function RefreshRulesetFilters( page )
+    if not page.rulesetFilters then
+        return
+    end
+    for ruleset, button in pairs( page.rulesetFilters.buttons ) do
+        local enabled = PLRDB.rulesets[ ruleset ] ~= false
+        if enabled then
+            button.icon:SetDesaturated( false )
+            button:SetAlpha( 1 )
+            button:Enable()
+        else
+            button.icon:SetDesaturated( true )
+            button:SetAlpha( 0.30 )
+            button:Disable()
+        end
+        if enabled and Roster.filterRuleset == ruleset then
+            button.border:Show()
+        else
+            button.border:Hide()
+        end
+    end
+end
+
 local function AddProfessionIcon( section, profession, index )
 
     local icon = ns.Components:CreateProfessionIcon(
@@ -421,8 +444,12 @@ function Roster:Create( page )
 end
 
 function Roster:RefreshCharacters( page )
-    if not page or not page.characterList then
+     if not page or not page.characterList then
         return
+    end
+    if Roster.filterRuleset and
+       PLRDB.rulesets[ Roster.filterRuleset ] == false then
+        Roster.filterRuleset = nil
     end
     for _, row in ipairs( page.characterRows ) do
         row:Hide()
@@ -484,4 +511,5 @@ function Roster:RefreshCharacters( page )
         ( math.max( rowCount - 1, 0 ) * rowSpacing )
     page.characterList.scrollChild:SetHeight( math.max( contentHeight, 1 ) )
     RefreshFactionProfessions( page )
+    RefreshRulesetFilters( page )
 end
