@@ -305,10 +305,11 @@ local UI = CreateUI()
 SLASH_PROFESSIONLEVELINGROUTE1 = "/plr"
 
 SlashCmdList.PROFESSIONLEVELINGROUTE = function()
+
     if UI.frame:IsShown() then
         UI.frame:Hide()
     else
+        ns.Planner:RefreshTrackedRecipes()
         UI.frame:Show()
     end
-
 end
