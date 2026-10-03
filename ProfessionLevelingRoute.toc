@@ -4,8 +4,8 @@
 ## Author: Erfwazbezbek
 ## SavedVariables: PLRDB
 ## SavedVariablesPerCharacter: PLRCDB
-## Version: 0.0.8
-## X-Date: 2026-10-01
+## Version: 0.0.9
+## X-Date: 2026-10-03
 ## IconTexture: Interface\Icons\Inv_10_specialization_inscription_archiving_color2
 
 ## Category: Professions
