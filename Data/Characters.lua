@@ -84,12 +84,11 @@ function Characters:_Char()
 end
 
 function Characters:_InitAmIRight()
-    if not PLRDB then
-        PLRDB = {}
-    end
-    if not PLRDB.characters then
-        PLRDB.characters = {}
-    end
+
+    if not PLRDB then PLRDB = {} end
+    if not PLRDB.characters then PLRDB.characters = {} end
+    if not PLRDB.trackedRecipes then PLRDB.trackedRecipes = {} end
+
     if not PLRDB.rulesets then
         PLRDB.rulesets = 
             {
@@ -99,9 +98,7 @@ function Characters:_InitAmIRight()
                 HC = true,
             }
     end
-    if not PLRCDB then
-        PLRCDB = {}
-    end
+    if not PLRCDB then PLRCDB = {} end
 end
 
 function Characters:_CharKey( character )
