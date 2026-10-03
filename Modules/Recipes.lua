@@ -2,6 +2,365 @@
 local ADDON, ns = ...
 local Recipes = {}
 ns.Recipes = Recipes
+Recipes.selectedCharacter = nil
+Recipes.selectedProfession = nil
+Recipes.selectedSource = nil
+
+local function CreateRecipesPanel( page )
+    local panel = ns.Components:CreatePanel( page )
+    panel:SetPoint( "TOPLEFT", page, "TOPLEFT", 5, -5 )
+    panel:SetPoint( "BOTTOMRIGHT", page, "BOTTOMRIGHT", -5, 5 )
+    page.recipesPanel = panel
+end
+
+local function RefreshTestRecipeSearch( page )
+
+    local searchText = string.lower( Recipes.searchText or "" )
+
+    local knownMatches =
+        searchText == "" or
+        string.find( string.lower( "Test Known Recipe" ), searchText, 1, true ) or
+        string.find( string.lower( "Test Crafted Item" ), searchText, 1, true ) or
+        string.find( string.lower( "Trainer" ), searchText, 1, true )
+
+    local missingMatches =
+        searchText == "" or
+        string.find( string.lower( "Test Missing Recipe" ), searchText, 1, true ) or
+        string.find( string.lower( "Another Crafted Item" ), searchText, 1, true ) or
+        string.find( string.lower( "Vendor (Test NPC)" ), searchText, 1, true )
+
+    if page.testKnownRecipe then
+        page.testKnownRecipe:SetShown(
+            page.knownToggle:GetChecked() and knownMatches
+        )
+    end
+
+    if page.testMissingRecipe then
+        page.testMissingRecipe:SetShown(
+            page.missingToggle:GetChecked() and missingMatches
+        )
+    end
+end
+
+local function CreateKnownToggle( page )
+    local toggle = CreateFrame(
+        "CheckButton",
+        nil,
+        page,
+        "UICheckButtonTemplate"
+    )
+    toggle:SetSize( 24, 24 )
+    toggle:SetPoint( "TOPRIGHT", page.recipesPanel, "TOPRIGHT", -165, 32 )
+    local text = toggle:CreateFontString( nil, "OVERLAY", "GameFontNormal" )
+    text:SetPoint( "LEFT", toggle, "RIGHT", 2, 0 )
+    text:SetText( "Known" )
+    toggle:SetChecked( true )
+        toggle:SetScript( "OnClick", function()
+        RefreshTestRecipeSearch( page )
+    end )
+    page.knownToggle = toggle
+end
+
+
+
+local function CreateMissingToggle( page )
+    local toggle = CreateFrame(
+        "CheckButton",
+        nil,
+        page,
+        "UICheckButtonTemplate"
+    )
+    toggle:SetSize( 24, 24 )
+    toggle:SetPoint( "LEFT", page.knownToggle, "RIGHT", 65, 0 )
+    local text = toggle:CreateFontString( nil, "OVERLAY", "GameFontNormal" )
+    text:SetPoint( "LEFT", toggle, "RIGHT", 2, 0 )
+    text:SetText( "Missing" )
+    toggle:SetChecked( true )
+    toggle:SetScript( "OnClick", function()
+        RefreshTestRecipeSearch( page )
+    end )
+
+    page.missingToggle = toggle
+end
+
+local function GetAvailableCharacters()
+    local characters = {}
+    for characterKey, character in pairs( ns.Characters:_SmashNGrab() ) do
+        local rulesetEnabled =
+            character.realm and
+            character.realm.ruleset and
+            PLRDB.rulesets[ character.realm.ruleset ] ~= false
+        if rulesetEnabled then
+            table.insert(
+                characters,
+                {
+                    key = characterKey,
+                    character = character,
+                }
+            )
+        end
+    end
+    table.sort( characters, function( a, b )
+        if a.character.name ~= b.character.name then
+            return a.character.name < b.character.name
+        end
+        return a.character.realm.name < b.character.realm.name
+    end )
+    return characters
+end
+
+local function CreateCharacterDropdown( page )
+    local dropdown = CreateFrame(
+        "DropdownButton",
+        nil,
+        page.recipesPanel,
+        "WowStyle1DropdownTemplate"
+    )
+    dropdown:SetSize( 180, 30 )
+    dropdown:SetPoint( "TOPLEFT", page.recipesPanel, "TOPLEFT", 10, -10 )
+    dropdown:SetupMenu( function( dropdown, rootDescription )
+        local characters = GetAvailableCharacters()
+        for _, characterData in ipairs( characters ) do
+            local character = characterData.character
+            local characterKey = characterData.key
+            local text =
+                character.name ..
+                " - " ..
+                character.realm.name
+            rootDescription:CreateRadio(
+                text,
+                function()
+                    return Recipes.selectedCharacter == characterKey
+                end,
+                function()
+                    Recipes.selectedCharacter = characterKey
+                    Recipes.selectedProfession = nil
+
+                    dropdown:SetDefaultText( character.name )
+
+                    if page.professionDropdown then
+                        page.professionDropdown:SetDefaultText( "Profession" )
+                        page.professionDropdown.Text:SetText( "Profession" )
+                    end
+                end
+            )
+        end
+    end )
+    dropdown:SetDefaultText( "Character" )
+    page.characterDropdown = dropdown
+end
+
+local function CreateProfessionDropdown( page )
+
+    local dropdown = CreateFrame(
+        "DropdownButton",
+        nil,
+        page.recipesPanel,
+        "WowStyle1DropdownTemplate"
+    )
+    dropdown:SetSize( 180, 30 )
+    dropdown:SetPoint( "LEFT", page.characterDropdown, "RIGHT", 10, 0 )
+    dropdown:SetupMenu( function( dropdown, rootDescription )
+        if not Recipes.selectedCharacter then
+            return
+        end
+        local characters = ns.Characters:_SmashNGrab()
+        local character = characters[ Recipes.selectedCharacter ]
+        if not character or not character.professions then
+            return
+        end
+        local professions = {}
+        for skillLineID, profession in pairs( character.professions ) do
+            table.insert(
+                professions,
+                {
+                    skillLineID = skillLineID,
+                    profession = profession,
+                }
+            )
+        end
+        table.sort( professions, function( a, b )
+            return a.profession.name < b.profession.name
+        end )
+        for _, professionData in ipairs( professions ) do
+            local profession = professionData.profession
+            local skillLineID = professionData.skillLineID
+            rootDescription:CreateRadio(
+                profession.name,
+                function()
+                    return Recipes.selectedProfession == skillLineID
+                end,
+                function()
+                    Recipes.selectedProfession = skillLineID
+                    dropdown:SetDefaultText( profession.name )
+                end
+            )
+        end
+    end )
+    dropdown:SetDefaultText( "Profession" )
+    page.professionDropdown = dropdown
+end
+
+local function CreateSourceDropdown( page )
+
+    local dropdown = CreateFrame(
+        "DropdownButton",
+        nil,
+        page.recipesPanel,
+        "WowStyle1DropdownTemplate"
+    )
+    dropdown:SetSize( 150, 30 )
+    dropdown:SetPoint( "LEFT", page.professionDropdown, "RIGHT", 10, 0 )
+    dropdown:SetupMenu( function( dropdown, rootDescription )
+        rootDescription:CreateRadio(
+            "All Sources",
+            function()
+                return Recipes.selectedSource == nil
+            end,
+            function()
+                Recipes.selectedSource = nil
+                dropdown:SetDefaultText( "All Sources" )
+            end
+        )
+        local sources = {
+            { name = "Crafted", value = "crafted" },
+            { name = "Drop", value = "drop" },
+            { name = "Quest", value = "quest" },
+            { name = "Vendor", value = "vendor" },
+            { name = "Trainer", value = "trainer" },
+            { name = "Unknown", value = "unknown" },
+        }
+        for _, source in ipairs( sources ) do
+            rootDescription:CreateRadio(
+                source.name,
+                function()
+                    return Recipes.selectedSource == source.value
+                end,
+                function()
+
+                    Recipes.selectedSource = source.value
+                    dropdown:SetDefaultText( source.name )
+                end
+            )
+        end
+    end )
+    dropdown:SetDefaultText( "Source" )
+    page.sourceDropdown = dropdown
+end
+
+local function CreateSearchBox( page )
+
+    local searchBox = CreateFrame(
+        "EditBox",
+        nil,
+        page.recipesPanel,
+        "SearchBoxTemplate"
+    )
+    searchBox:SetSize( 200, 30 )
+    searchBox:SetPoint( "LEFT", page.sourceDropdown, "RIGHT", 10, 0 )
+    searchBox:SetAutoFocus( false )
+    searchBox:SetScript( "OnTextChanged", function( self )
+    Recipes.searchText = self:GetText() or ""
+        if self.Instructions then
+            self.Instructions:SetShown( Recipes.searchText == "" )
+        end
+        RefreshTestRecipeSearch( page )
+    end )
+    page.searchBox = searchBox
+end
+
+local function CreateRecipeHeader( page )
+
+    local header = CreateFrame(
+        "Frame",
+        nil,
+        page.recipesPanel
+    )
+
+    header:SetPoint( "TOPLEFT", page.characterDropdown, "BOTTOMLEFT", 0, -10 )
+    header:SetPoint( "RIGHT", page.recipesPanel, "RIGHT", -10, 0 )
+    header:SetHeight( 24 )
+
+    local status = header:CreateFontString( nil, "OVERLAY", "GameFontNormal" )
+    status:SetPoint( "LEFT", header, "LEFT", 5, 0 )
+    status:SetWidth( 30 )
+    status:SetText( "" )
+
+    local rank = header:CreateFontString( nil, "OVERLAY", "GameFontNormal" )
+    rank:SetPoint( "LEFT", header, "LEFT", 35, 0 )
+    rank:SetWidth( 50 )
+    rank:SetJustifyH( "LEFT" )
+    rank:SetText( "Rank" )
+
+    local recipe = header:CreateFontString( nil, "OVERLAY", "GameFontNormal" )
+    recipe:SetPoint( "LEFT", header, "LEFT", 105, 0 )
+    recipe:SetWidth( 240 )
+    recipe:SetJustifyH( "LEFT" )
+    recipe:SetText( "Recipe" )
+
+    local creates = header:CreateFontString( nil, "OVERLAY", "GameFontNormal" )
+    creates:SetPoint( "LEFT", header, "LEFT", 355, 0 )
+    creates:SetWidth( 200 )
+    creates:SetJustifyH( "LEFT" )
+    creates:SetText( "Creates" )
+
+    local source = header:CreateFontString( nil, "OVERLAY", "GameFontNormal" )
+    source:SetPoint( "LEFT", header, "LEFT", 625, 0 )
+    source:SetWidth( 170 )
+    source:SetJustifyH( "LEFT" )
+    source:SetText( "Source" )
+
+    page.recipeHeader = header
+end
+
+local function CreateTestRecipeRow( page, index, known, rankText, recipeText, createsText, sourceText )
+
+    local row = CreateFrame(
+        "Frame",
+        nil,
+        page.recipesPanel
+    )
+
+    row:SetPoint( "TOPLEFT", page.recipeHeader, "BOTTOMLEFT", 0, -2 - ( ( index - 1 ) * 28 ) )
+    row:SetPoint( "RIGHT", page.recipeHeader, "RIGHT", 0, 0 )
+    row:SetHeight( 28 )
+
+    local status = row:CreateTexture( nil, "ARTWORK" )
+    status:SetSize( 16, 16 )
+    status:SetPoint( "LEFT", row, "LEFT", 5, 0 )
+
+    if known then
+        status:SetTexture( "Interface\\RaidFrame\\ReadyCheck-Ready" )
+    else
+        status:SetTexture( "Interface\\RaidFrame\\ReadyCheck-NotReady" )
+    end
+
+    local rank = row:CreateFontString( nil, "OVERLAY", "GameFontHighlight" )
+    rank:SetPoint( "LEFT", row, "LEFT", 35, 0 )
+    rank:SetWidth( 50 )
+    rank:SetJustifyH( "LEFT" )
+    rank:SetText( rankText )
+
+    local recipe = row:CreateFontString( nil, "OVERLAY", "GameFontHighlight" )
+    recipe:SetPoint( "LEFT", row, "LEFT", 105, 0 )
+    recipe:SetWidth( 240 )
+    recipe:SetJustifyH( "LEFT" )
+    recipe:SetText( recipeText )
+
+    local creates = row:CreateFontString( nil, "OVERLAY", "GameFontHighlight" )
+    creates:SetPoint( "LEFT", row, "LEFT", 355, 0 )
+    creates:SetWidth( 200 )
+    creates:SetJustifyH( "LEFT" )
+    creates:SetText( createsText )
+
+    local source = row:CreateFontString( nil, "OVERLAY", "GameFontHighlight" )
+    source:SetPoint( "LEFT", row, "LEFT", 625, 0 )
+    source:SetWidth( 170 )
+    source:SetJustifyH( "LEFT" )
+    source:SetText( sourceText )
+
+    return row
+end
 
 function Recipes:Create( page )
     -- Recipes, may I recommend a Coq au Vin?? 
@@ -64,11 +423,14 @@ function Recipes:Create( page )
         12. Plate and devour 
 
     ]]
-    page.title = page:CreateFontString(
-        nil,
-        "OVERLAY",
-        "GameFontNormalLarge"
-    )
-    page.title:SetPoint( "CENTER" )
-    page.title:SetText( "Here be recipes! Soon(tm)" )
+    CreateRecipesPanel( page )
+    CreateKnownToggle( page )
+    CreateMissingToggle( page )
+    CreateCharacterDropdown( page )
+    CreateProfessionDropdown( page )
+    CreateSourceDropdown( page )
+    CreateSearchBox( page )
+    CreateRecipeHeader( page )   
+    page.testKnownRecipe = CreateTestRecipeRow( page, 1, true, "125", "Test Known Recipe", "Test Crafted Item", "Trainer" )
+    page.testMissingRecipe =CreateTestRecipeRow( page, 2, false, "150", "Test Missing Recipe", "Another Crafted Item", "Vendor (Test NPC)")
 end
