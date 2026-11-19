@@ -4,8 +4,8 @@
 ## Author: Erfwazbezbek
 ## SavedVariables: PLRDB
 ## SavedVariablesPerCharacter: PLRCDB
-## Version: 0.0.9
-## X-Date: 2026-10-03
+## Version: 1.0.1
+## X-Date: 2026-11-19
 ## IconTexture: Interface\Icons\Inv_10_specialization_inscription_archiving_color2
 
 ## Category: Professions
@@ -30,12 +30,30 @@ Data\Characters.lua
 Data\Realms.lua
 Data\Professions.lua
 
+#-- Generated Recipe Data
+Data\Alchemy.lua
+Data\Blacksmithing.lua
+Data\Cooking.lua
+Data\Fishing.lua
+Data\FirstAid.lua
+Data\Enchanting.lua
+Data\Engineering.lua
+Data\Herbalism.lua
+Data\Leatherworking.lua
+Data\Mining.lua
+Data\Skinning.lua
+Data\Tailoring.lua
+
 UI\Menu.lua
 UI\Button.lua
 
+Modules\CraftingDependencies.lua
+Modules\Inventory.lua
+Modules\Acquisition.lua
+Modules\RouteOptimizer.lua
+Modules\Planner.lua
 Modules\Components.lua
 Modules\Roster.lua
-Modules\Planner.lua
 Modules\Recipes.lua
 
 UI\UI.lua
