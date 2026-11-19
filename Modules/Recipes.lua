@@ -18,7 +18,6 @@ local FilterRecipeIDs
 local SortRecipeIDsByRank
 local GetRecipeState
 local GetRecipeMeta
--- Retail profession APIs can be absent or reject uncached recipe IDs.
 local function SafeTradeSkillCall(method, ...)
     local api = C_TradeSkillUI
     local fn = api and api[method]
@@ -148,10 +147,7 @@ local function CreateCharacterDropdown( page )
         for _, characterData in ipairs( characters ) do
             local character = characterData.character
             local characterKey = characterData.key
-            local text =
-                character.name ..
-                " - " ..
-                character.realm.name
+            local text = character.name
             rootDescription:CreateRadio(
                 text,
                 function()
@@ -670,7 +666,6 @@ UpdateRecipeRow = function( page, index, recipeMeta )
             if faction == "alliance" then return "Alliance" end
             if faction == "neutral" or faction == "both" then return "Neutral" end
         end
-        -- Explicit capital-city map IDs; other locations remain unclassified.
         if entry.wowheadZoneID == 1519 then return "Alliance" end -- Stormwind
         if entry.wowheadZoneID == 1637 then return "Horde" end -- Orgrimmar
         return "Unspecified"
@@ -727,7 +722,6 @@ UpdateRecipeRow = function( page, index, recipeMeta )
                 end
             end
             if not any then GameTooltip:AddLine("No detailed sources available", 0.8, 0.8, 0.8) end
-            -- Never invent a Horde or Alliance vendor when the dataset lacks one.
             local hasOwnFaction = false
             for _, entry in ipairs(entries) do
                 if SourceFaction(entry) == playerFaction or SourceFaction(entry) == "Neutral" then
