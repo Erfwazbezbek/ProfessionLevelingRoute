@@ -24,8 +24,6 @@
 embeds.xml
 
 #-- Code
-ProfessionLevelingRoute.lua
-
 Data\Characters.lua
 Data\Realms.lua
 Data\Professions.lua
